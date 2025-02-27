@@ -8,6 +8,7 @@
 #include <platform/sunburst/platform-gpio.hh>
 #include <platform/sunburst/platform-pinmux.hh>
 #include <platform/sunburst/platform-spi.hh>
+#include "driver/MCP251XFD/MCP251XFD.hh"
 #include "driver/interface.hh"
 
 #define TIMESTAMP_TICK_us ( MS_PER_TICK * 1000L ) // Tickrate in us (MS_PER_TICK * 1000)
@@ -20,18 +21,31 @@ uint32_t can1SclkResult = 0;
 Spi_Config cfgCan1;
 MCP251XFD::MCP251XFD_BitTimeStats can0Bittimestats;
 uint32_t sysclkExt1;
-MCP251XFD::MCP251XFD can1 = {
-	.UserDriverData = NULL,	//!< Optional, can be used to store driver data or NULL
-	.DriverConfig = MCP251XFD::MCP251XFD_DRIVER_NORMAL_USE,    //!< Driver configuration, by default it is MCP251XFD_DRIVER_NORMAL_USE. Configuration can be OR'ed
-	.GPIOsOutLevel = 0,              //!< GPIOs pins output state (0 = set to '0' ; 1 = set to '1'). Used to speed up output change
-	.SPI_ChipSelect = 0,				//!< This is the Chip Select index that will be set at the call of a transfer
-	.InterfaceDevice = &cfgCan1,	//!< This is the pointer that will be in the first parameter of all interface call functions
-	.SPIClockSpeed = 500000,				//!< SPI nominal clock speed (max is SYSCLK div by 2)
-	.fnSPI_Init = MCP251XFD_InterfaceInit_Sonata,	//!< This function will be called at driver initialization to configure the interface driver
-	.fnSPI_Transfer = MCP251XFD_InterfaceTransfer_Sonata,	//!< This function will be called at driver read/write data from/to the interface driver SPI
-	.fnGetCurrentms = GetCurrentms_Sonata,	//!< This function will be called when the driver need to get current millisecond
-	.fnComputeCRC16 = ComputeCRC16_Sonata	//!< This function will be called when a CRC16-CMS computation is needed (ie. in CRC mode or Safe Write). In normal mode, this can point to NULL
-};
+// MCP251XFD::MCP251XFD can1 = {
+// 	.UserDriverData = NULL,	//!< Optional, can be used to store driver data or NULL
+// 	.DriverConfig = MCP251XFD::MCP251XFD_DRIVER_NORMAL_USE,    //!< Driver configuration, by default it is MCP251XFD_DRIVER_NORMAL_USE. Configuration can be OR'ed
+// 	.GPIOsOutLevel = 0,              //!< GPIOs pins output state (0 = set to '0' ; 1 = set to '1'). Used to speed up output change
+// 	.SPI_ChipSelect = 0,				//!< This is the Chip Select index that will be set at the call of a transfer
+// 	.InterfaceDevice = &cfgCan1,	//!< This is the pointer that will be in the first parameter of all interface call functions
+// 	.SPIClockSpeed = 500000,				//!< SPI nominal clock speed (max is SYSCLK div by 2)
+// 	.fnSPI_Init = MCP251XFD_InterfaceInit_Sonata,	//!< This function will be called at driver initialization to configure the interface driver
+// 	.fnSPI_Transfer = MCP251XFD_InterfaceTransfer_Sonata,	//!< This function will be called at driver read/write data from/to the interface driver SPI
+// 	.fnGetCurrentms = GetCurrentms_Sonata,	//!< This function will be called when the driver need to get current millisecond
+// 	.fnComputeCRC16 = ComputeCRC16_Sonata	//!< This function will be called when a CRC16-CMS computation is needed (ie. in CRC mode or Safe Write). In normal mode, this can point to NULL
+// };
+
+MCP251XFD::MCP251XFD can1 = MCP251XFD::MCP251XFD(
+	NULL, 	//!< Optional, can be used to store driver data or NULL
+	MCP251XFD::MCP251XFD_DRIVER_NORMAL_USE,	//!< Driver configuration, by default it is MCP251XFD_DRIVER_NORMAL_USE. Configuration can be OR'ed
+	0,	//!< GPIOs pins output state (0 = set to '0' ; 1 = set to '1'). Used to speed up output change
+	0, 	//!< This is the Chip Select index that will be set at the call of a transfer
+	&cfgCan1, //!< This is the pointer that will be in the first parameter of all interface call functions
+	500000,	//!< SPI nominal clock speed (max is SYSCLK div by 2)
+	MCP251XFD_InterfaceInit_Sonata, 	//!< This function will be called at driver initialization to configure the interface driver
+	MCP251XFD_InterfaceTransfer_Sonata,	//!< This function will be called at driver read/write data from/to the interface driver SPI
+	GetCurrentms_Sonata,	//!< This function will be called when the driver need to get current millisecond
+	ComputeCRC16_Sonata		//!< This function will be called when a CRC16-CMS computation is needed (ie. in CRC mode or Safe Write). In normal mode, this can point to NULL
+);
 
 MCP251XFD::MCP251XFD_Config can1Conf =
 {
@@ -133,50 +147,50 @@ eERRORRESULT configure_mcp251xfd_on_can1() {
 		Debug::log("ERROR! GetSpiConfig() failed with {}.", result);
 	}
 
-	Debug::log("Init_MCP251XFD()");
+	Debug::log("can1.Init()");
 	thread_millisecond_wait(300);	// A short delay for clock to stablise (only need to be 3ms so 300ms should be more than enough)
-	result = Init_MCP251XFD(&can1, &can1Conf);
+	result = can1.Init(&can1Conf);
 	if(result != ERR_OK) {
-		Debug::log("ERROR! Init_MCP251XFD() failed with {}.", result);
+		Debug::log("ERROR! can1.Init() failed with {}.", result);
 	}
-	Debug::log("Init_MCP251XFD() done.");
+	Debug::log("can1.Init() done.");
 
-	//Debug::log("MCP251XFD_ConfigureTimeStamp()");
+	//Debug::log("can1.ConfigureTimeStamp()");
 	//Debug::log("SYSCLK_Ext1 = {}", SYSCLK_Ext1);
 	//Debug::log("TIMESTAMP_TICK(SYSCLK_Ext1) = {}", TIMESTAMP_TICK(SYSCLK_Ext1));
-	//result = MCP251XFD_ConfigureTimeStamp(&can1, true, MCP251XFD_TS_CAN20_SOF_CANFD_SOF, TIMESTAMP_TICK(SYSCLK_Ext1), false);
+	//result = can1.ConfigureTimeStamp(true, MCP251XFD_TS_CAN20_SOF_CANFD_SOF, TIMESTAMP_TICK(SYSCLK_Ext1), false);
 	//if(result != ERR_OK) {
-	//	Debug::log("ERROR! MCP251XFD_ConfigureTimeStamp() failed with {}.", result);
+	//	Debug::log("ERROR! can1.ConfigureTimeStamp() failed with {}.", result);
 	//}
-	//Debug::log("MCP251XFD_ConfigureTimeStamp() done.");
+	//Debug::log("can1.ConfigureTimeStamp() done.");
 
-	Debug::log("MCP251XFD_ConfigureFIFOList()");
-	result = MCP251XFD_ConfigureFIFOList(&can1, mcP251XfdExt1FifOlist, MCP251XFD_EXT1_FIFO_COUNT);
+	Debug::log("can1.ConfigureFIFOList()");
+	result = can1.ConfigureFIFOList(mcP251XfdExt1FifOlist, MCP251XFD_EXT1_FIFO_COUNT);
 	if(result != ERR_OK) {
-		Debug::log("ERROR! MCP251XFD_ConfigureFIFOList() failed with {}.", result);
+		Debug::log("ERROR! can1.ConfigureFIFOList() failed with {}.", result);
 	}
-	Debug::log("MCP251XFD_ConfigureFIFOList() done.");
+	Debug::log("can1.ConfigureFIFOList() done.");
 
-	Debug::log("MCP251XFD_ConfigureFilterList()");
-	result = MCP251XFD_ConfigureFilterList(&can1, MCP251XFD::MCP251XFD_D_NET_FILTER_DISABLE, &mcp251xfdExt1FilterList[0], MCP251XFD_EXT1_FILTER_COUNT);
+	Debug::log("can1.ConfigureFilterList()");
+	result = can1.ConfigureFilterList(MCP251XFD::MCP251XFD_D_NET_FILTER_DISABLE, &mcp251xfdExt1FilterList[0], MCP251XFD_EXT1_FILTER_COUNT);
 	if(result != ERR_OK) {
-		Debug::log("ERROR! MCP251XFD_ConfigureFilterList() failed with {}.", result);
+		Debug::log("ERROR! can1.ConfigureFilterList() failed with {}.", result);
 	}
-	Debug::log("MCP251XFD_ConfigureFilterList() done.");
+	Debug::log("can1.ConfigureFilterList() done.");
 
-	Debug::log("MCP251XFD_StartCAN20()");
-	result = MCP251XFD_StartCAN20(&can1);
+	Debug::log("can1.StartCAN20()");
+	result = can1.StartCAN20();
 	if(result != ERR_OK) {
-		Debug::log("ERROR! MCP251XFD_StartCAN20() failed with {}.", result);
+		Debug::log("ERROR! can1.StartCAN20() failed with {}.", result);
 	}
-	Debug::log("MCP251XFD_StartCAN20() done.");
+	Debug::log("can1.StartCAN20() done.");
 
-	// Debug::log("MCP251XFD_StartCANFD()");
-	// result = MCP251XFD_StartCANFD(&can1);
+	// Debug::log("can1.StartCANFD()");
+	// result = can1.StartCANFD();
 	// if(result != ERR_OK) {
-	// 	Debug::log("ERROR! MCP251XFD_StartCANFD() failed with {}.", result);
+	// 	Debug::log("ERROR! can1.StartCANFD() failed with {}.", result);
 	// }
-	// Debug::log("MCP251XFD_StartCANFD() done.");
+	// Debug::log("can1.StartCANFD() done.");
 
 	return result;
 }
@@ -189,7 +203,7 @@ eERRORRESULT transmit_message_from_ext1_txq()
 {
 	eERRORRESULT ret = ERR_OK;
 	MCP251XFD::eMCP251XFD_FIFOstatus fifoStatus = MCP251XFD::MCP251XFD_TX_FIFO_FULL;
-	ret = MCP251XFD_GetFIFOStatus(&can1, MCP251XFD::MCP251XFD_TXQ, &fifoStatus); // First get FIFO2 status
+	ret = can1.GetFIFOStatus(MCP251XFD::MCP251XFD_TXQ, &fifoStatus); // First get FIFO2 status
 	if (ret != ERR_OK) { 
 		return ret;
 	}
@@ -204,7 +218,7 @@ eERRORRESULT transmit_message_from_ext1_txq()
 		tansmitMessage.DLC = MCP251XFD::MCP251XFD_DLC_8BYTE;
 		tansmitMessage.PayloadData = &txPayloadData[0];
 		// Send message and flush
-		ret = MCP251XFD_TransmitMessageToFIFO(&can1, &tansmitMessage, MCP251XFD::MCP251XFD_TXQ, true);
+		ret = can1.TransmitMessageToFIFO(&tansmitMessage, MCP251XFD::MCP251XFD_TXQ, true);
 		txMessageSeq++;
 	}
 	return ret;
@@ -216,7 +230,7 @@ eERRORRESULT transmit_message_from_ext1_txq2()
 {
 	eERRORRESULT ret = ERR_OK;
 	MCP251XFD::eMCP251XFD_FIFOstatus fifoStatus = MCP251XFD::MCP251XFD_TX_FIFO_FULL;
-	ret = MCP251XFD_GetFIFOStatus(&can1, MCP251XFD::MCP251XFD_TXQ, &fifoStatus); // First get FIFO2 status
+	ret = can1.GetFIFOStatus(MCP251XFD::MCP251XFD_TXQ, &fifoStatus); // First get FIFO2 status
 	if (ret != ERR_OK) { 
 		return ret;
 	}
@@ -231,7 +245,7 @@ eERRORRESULT transmit_message_from_ext1_txq2()
 		tansmitMessage.DLC = MCP251XFD::MCP251XFD_DLC_8BYTE;
 		tansmitMessage.PayloadData = &txPayloadData[0];
 		// Send message and flush
-		ret = MCP251XFD_TransmitMessageToFIFO(&can1, &tansmitMessage, MCP251XFD::MCP251XFD_TXQ, true);
+		ret = can1.TransmitMessageToFIFO(&tansmitMessage, MCP251XFD::MCP251XFD_TXQ, true);
 		txMessageSeq++;
 	}
 	return ret;
@@ -244,7 +258,7 @@ eERRORRESULT receive_message_from_ext1_fifo(MCP251XFD::eMCP251XFD_FIFO fifo)
 {
 	eERRORRESULT ret = ERR_OK;
 	MCP251XFD::eMCP251XFD_FIFOstatus fifoStatus = MCP251XFD::MCP251XFD_RX_FIFO_EMPTY;
-	ret = MCP251XFD_GetFIFOStatus(&can1, fifo, &fifoStatus); // First get FIFO1 status
+	ret = can1.GetFIFOStatus(fifo, &fifoStatus); // First get FIFO1 status
 	if (ret != ERR_OK) { 
 		Debug::log("ERROR! MCP251XFD_GetFIFOStatus() return {}", ret);
 		return ret;
@@ -256,7 +270,7 @@ eERRORRESULT receive_message_from_ext1_fifo(MCP251XFD::eMCP251XFD_FIFO fifo)
 		MCP251XFD::MCP251XFD_CANMessage receivedMessage;
 		receivedMessage.PayloadData = &rxPayloadData[0]; // Add receive payload data pointer to the message structure
 		// that will be received
-		ret = MCP251XFD_ReceiveMessageFromFIFO(&can1, &receivedMessage, MCP251XFD::MCP251XFD_PAYLOAD_64BYTE,
+		ret = can1.ReceiveMessageFromFIFO(&receivedMessage, MCP251XFD::MCP251XFD_PAYLOAD_64BYTE,
 		&messageTimeStamp, fifo);
 		if (ret == ERR_OK)
 		{
