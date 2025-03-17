@@ -1,6 +1,6 @@
 # A Basic CHERI Tests
 
-This uses serial at 9600. Connect pins pmod0_2 and pmod0_3 together to reate a loop back.
+This uses serial at 9600. Connect pins pmod0_2 and pmod0_3 together to create a physical loopback.
 
 ## What Does This Show?
 1. It shows that hardware interfaces aren't protected. A second compartment can easily interfere with the UART by capturing bytes or using the `pinmux` to disconnect the UART input from a physical pin.
