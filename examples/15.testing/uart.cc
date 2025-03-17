@@ -134,6 +134,35 @@ void __cheri_compartment("uart") uart_entry()
 		write(&(msg3->two[i]));
 	}
 
+	struct MsgStruct2 {
+		uint32_t one;
+		char two[4];
+		uint32_t three;
+	};
+	MsgStruct2 msg4 = {
+		.one = 0x33323130,
+		.two = "456",
+		.three = 0x00393837
+	};
+	MsgStruct2* msg5 = &msg4;
+	printf("msg4.one = 0x%u\r\n", msg4.one);
+	printf("msg4.two = %s\r\n", msg4.two);
+	printf("msg4.three = 0x%u\r\n", msg4.three);
+
+	for(int i = -2; i < 6; i++) {
+		Debug::log("&(msg4.two[{}]):", i);
+		write(&(msg4.two[i]));
+	}
+
+	printf("msg5->one = 0x%u\r\n", msg5->one);
+	printf("msg5->two = %s\r\n", msg5->two);
+	printf("msg5->three = 0x%u\r\n", msg5->three);
+
+	for(int i = -2; i < 6; i++) {
+		Debug::log("&(msg5->two[{}]):", i);
+		write(&(msg5->two[i]));
+	}
+
 
 	Debug::log("Tests finished!");
 }
